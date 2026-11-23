@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snaply site and price simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f6;--surface:#fff;--ink:#14161f;--muted:#5b6070;--line:#d9dde6;--accent:#d6246e;--blue:#2f5bd6;--pos:#12805c;--neg:#c0392b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12141b;--surface:#1b1e28;--ink:#eceef4;--muted:#9aa1b2;--line:#2c3040;--accent:#ff5c9a;--blue:#7da2ff;--pos:#3ccf9a;--neg:#ff7b6b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12141b;--surface:#1b1e28;--ink:#eceef4;--muted:#9aa1b2;--line:#2c3040;--accent:#ff5c9a;--blue:#7da2ff;--pos:#3ccf9a;--neg:#ff7b6b;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:28px 18px 48px}
+h1{font-family:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;font-weight:700;font-size:clamp(28px,5vw,44px);line-height:1.1;letter-spacing:-.02em;margin:0 0 12px;max-width:22ch}
+.lead{color:var(--muted);max-width:62ch;margin:0 0 22px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:14px}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px 24px}
+.row{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+.row b{color:var(--ink);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.frame{border:2px solid var(--ink);border-radius:4px;padding:14px 12px;background:var(--surface)}
+.frame small{display:block;color:var(--muted);font-size:13px;line-height:1.3;margin-bottom:6px}
+.frame b{display:block;font-family:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;font-size:28px;line-height:1.1;font-weight:700}
+.verdict{font-weight:600;margin:0 0 4px}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.cmp{color:var(--muted);margin:0 0 14px;font-size:15px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted);margin:0 0 8px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:20px;border-top:3px solid}
+.chartbox{position:relative;height:300px}
+.note{font-size:13px;color:var(--muted);margin:12px 0 0;max-width:80ch}
+</style>
+</head>
+<body>
+<main class="wrap">
+<h1>Where should Snaply place its first booth, and what should it charge?</h1>
+<p class="lead">Pick a mall, set the price and the daily sessions, and see the monthly result, break-even volume and payback for one booth. The chart compares the 4 AZN survey price with the 8 AZN base price.</p>
+<section class="panel" aria-label="Simulator">
+<div class="chips" id="locs" role="group" aria-label="Mall"></div>
+<div class="sliders">
+<div><div class="row"><span>Price per session (AZN)</span><b id="pv"></b></div><input type="range" id="p" min="3" max="12" step="0.5" value="4" aria-label="Price per session in AZN"></div>
+<div><div class="row"><span>Rent per booth (AZN per month)</span><b id="rv"></b></div><input type="range" id="r" min="100" max="500" step="10" value="340" aria-label="Rent per booth in AZN per month"></div>
+<div><div class="row"><span>Sessions per booth per day</span><b id="sv"></b></div><input type="range" id="s" min="0" max="30" step="1" value="14" aria-label="Sessions per booth per day"></div>
+</div>
+<div class="strip">
+<div class="frame"><small>Sessions per month</small><b id="m1"></b></div>
+<div class="frame"><small>Monthly result per booth</small><b id="m2"></b></div>
+<div class="frame"><small>Break-even sessions per day</small><b id="m3"></b></div>
+<div class="frame"><small>Payback in months</small><b id="m4"></b></div>
+</div>
+<p class="verdict" id="verdict"></p>
+<p class="cmp" id="cmp"></p>
+<div class="legend"><span><i id="l1"></i>4 AZN</span><span><i id="l2" style="border-top-style:dashed"></i>8 AZN</span><span><i id="l3" style="border-top-style:dotted"></i>Selected price</span></div>
+<div class="chartbox"><canvas id="ch" role="img" aria-label="Line chart of monthly result per booth in AZN against sessions per day at 4 AZN, 8 AZN and the selected price">Monthly result per booth by sessions per day at 4 AZN, 8 AZN and the selected price.</canvas></div>
+<p class="note">Chart shows the monthly operating result per booth after depreciation. The large marker is the current sessions per day.</p>
+</section>
+<p class="note">Model per booth: media cost 1.20 AZN per session, payment fees 3%, add-on revenue 0.33 AZN per session, fixed costs 645.67 AZN per month excluding rent, depreciation 172.36 AZN per month, 30 operating days, funding requirement 16,652 AZN per booth (base case). Marketing is excluded. Rents of 170 and 340 AZN are listing benchmarks, not written mall quotes. Sessions per day is an input, not a finding: the main survey and footfall counts are still pending. Based on the Group 3 business plan proposal for BUSA-4790.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var locs=[{n:'Ganjlik Mall',r:340},{n:'28 Mall',r:170},{n:'Port Baku Walk',r:340},{n:'Deniz Mall',r:340},{n:'Crescent Mall',r:170}];
+var FIX=1937/3,DEP=517.08/3,ADD=600/1800,FEE=0.03,MAT=1.2,DAYS=30,FUND=49955/3;
+function con(p){return (p+ADD)*(1-FEE)-MAT;}
+function res(p,s,r){return con(p)*s*DAYS-(FIX+r+DEP);}
+function sur(p,s,r){return con(p)*s*DAYS-(FIX+r);}
+var $=function(i){return document.getElementById(i);};
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+var xs=[];for(var i=0;i<=30;i++)xs.push(i);
+var chart=null;
+function fmt(v){return (v<0?'-':'')+Math.abs(Math.round(v)).toLocaleString('en-US');}
+var bw=$('locs'),sel=0;
+locs.forEach(function(l,i){var b=document.createElement('button');b.className='chip';b.type='button';b.textContent=l.n+' ('+l.r+' AZN)';b.setAttribute('aria-pressed','false');b.onclick=function(){sel=i;$('r').value=l.r;render();};bw.appendChild(b);});
+function build(){
+chart=new Chart($('ch'),{type:'line',data:{labels:xs,datasets:[{data:[],borderWidth:2,pointRadius:0,tension:0},{data:[],borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0},{data:[],borderWidth:2,borderDash:[2,3],pointRadius:0,tension:0}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Sessions per booth per day'},ticks:{autoSkip:true,maxTicksLimit:16},grid:{display:false}},y:{title:{display:true,text:'Monthly result per booth (AZN)'},grid:{}}}}});
+}
+function render(){
+var p=parseFloat($('p').value),r=parseFloat($('r').value),s=parseFloat($('s').value);
+$('pv').textContent=p.toFixed(1);$('rv').textContent=Math.round(r);$('sv').textContent=Math.round(s);
+var rs=res(p,s,r),su=sur(p,s,r),be=(FIX+r+DEP)/(con(p)*DAYS);
+$('m1').textContent=Math.round(s*DAYS).toLocaleString('en-US');
+$('m2').textContent=fmt(rs)+' AZN';
+$('m3').textContent=be.toFixed(1);
+$('m4').textContent=su>0?(FUND/su).toFixed(1):'n/a';
+var v=$('verdict');
+v.className='verdict '+(rs>=0?'pos':'neg');
+v.textContent=rs>=0?('At '+p.toFixed(1)+' AZN this booth is above break-even: '+s+' sessions per day against '+be.toFixed(1)+' needed.'):('At '+p.toFixed(1)+' AZN this booth is below break-even: '+s+' sessions per day against '+be.toFixed(1)+' needed.');
+$('cmp').textContent='Same rent and volume: '+fmt(res(4,s,r))+' AZN per month at 4 AZN, '+fmt(res(8,s,r))+' AZN per month at 8 AZN.';
+Array.prototype.forEach.call(bw.children,function(b,i){b.setAttribute('aria-pressed',String(i===sel));});
+var cb=css('--blue'),ca=css('--accent'),ci=css('--ink'),cm=css('--muted'),cl=css('--line');
+$('l1').style.borderTopColor=cb;$('l2').style.borderTopColor=ca;$('l3').style.borderTopColor=ci;
+var d=chart.data.datasets;
+d[0].data=xs.map(function(x){return Math.round(res(4,x,r));});d[0].borderColor=cb;d[0].backgroundColor=cb;
+d[1].data=xs.map(function(x){return Math.round(res(8,x,r));});d[1].borderColor=ca;d[1].backgroundColor=ca;
+d[2].data=xs.map(function(x){return Math.round(res(p,x,r));});d[2].borderColor=ci;d[2].backgroundColor=ci;
+var idx=Math.round(s);
+d[2].pointRadius=xs.map(function(x){return x===idx?7:0;});
+var o=chart.options.scales;
+o.x.ticks.color=cm;o.y.ticks.color=cm;o.x.title.color=cm;o.y.title.color=cm;
+o.y.grid.color=function(c){return c.tick&&c.tick.value===0?cm:cl;};
+chart.update();
+}
+build();
+['p','r','s'].forEach(function(i){$(i).oninput=render;});
+if(window.matchMedia){var mq=window.matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',render);}
+render();
+</script>
+</body>
+</html>
